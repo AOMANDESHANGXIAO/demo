@@ -157,3 +157,28 @@ export function removeHtmlAttributes(htmlString: string): string {
 
     return doc.body.innerHTML
 }
+
+export interface BlockquoteItem {
+    innerText: string
+    outerHTML: string
+}
+
+export function extractBlockquoteItems(htmlString: string): BlockquoteItem[] {
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(htmlString, 'text/html')
+
+    const result: BlockquoteItem[] = []
+
+    const blockquotes = doc.querySelectorAll('blockquote')
+    for (const blockquote of blockquotes) {
+        const paragraphs = blockquote.querySelectorAll('p')
+        for (const p of paragraphs) {
+            result.push({
+                innerText: p.innerText,
+                outerHTML: p.outerHTML
+            })
+        }
+    }
+
+    return result
+}

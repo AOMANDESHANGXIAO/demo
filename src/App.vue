@@ -3,7 +3,6 @@ import { YuqueRichText } from 'yuque-rich-text'
 import { parseYuqueHtml, removeHtmlAttributes } from './utils/parseHtml'
 import { ref } from 'vue'
 import { prepare, layout } from '@chenglou/pretext'
-
 defineOptions({
   name: 'app'
 })
@@ -30,11 +29,22 @@ const spliteYuQueHtml2Pages = (htmlString: string) => {
   let currentPage = 0
   // 清除html中的id属性
   const cleanedHtml = removeHtmlAttributes(htmlString)
+  //   export interface YuqueBlock {
+  //     tagName: string
+  //     innerText: string
+  //     outerHTML: string
+  // }
+  // export interface ParseYuqueHtmlResult {
+  //     blocks: YuqueBlock[]
+  //     html: string
+  // }
   const blocks = parseYuqueHtml(cleanedHtml).blocks
   pages = []
+
   for (let block of blocks) {
+    let height = 0
     const prepared = prepare(block.innerText, '16px Inter')
-    const height = layout(prepared, pageWidth, lineCount).height
+    height = layout(prepared, pageWidth, lineCount).height
     if (!pages.length) {
       // 添加第一页
       pages.push({
@@ -42,6 +52,9 @@ const spliteYuQueHtml2Pages = (htmlString: string) => {
         id: `page-${currentPage}`,
         blockHtmls: []
       })
+    }
+    // 如果一个块级的内部文本超出了最大高度限制，要拆分多个块
+    if (height > pageCanUseHeight) {
     }
     // 超出宽度限制换行
     if (pages[currentPage].height + height > pageCanUseHeight) {
@@ -77,15 +90,13 @@ const renderPages = () => {
 </template>
 
 <style scoped lang="scss">
-.page {
-  blockquote {
+.pages-view {
+  .page {
     p {
-      font-size: 56px;
-      margin: 0 !important;
+      margin-bottom: 0 !important;
     }
   }
 }
-
 .banner {
   width: 100vw;
   height: 5vh;

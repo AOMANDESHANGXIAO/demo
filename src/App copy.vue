@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { YuqueRichText } from 'yuque-rich-text'
+import { parseYuqueHtml, removeHtmlAttributes, extractBlockquoteItems } from './utils/parseHtml'
+import { getTextHeight } from './utils/tool'
 import { ref } from 'vue'
 import { prepare, layout } from '@chenglou/pretext'
+
 defineOptions({
-  name: 'AutoSplitTexts2Page'
+  name: 'app'
 })
 const text = ref('')
 const handleChange = (value: string) => {
   // console.log(value)
-  pages = spliteYuQueHtml2Pages(value)
+  spliteYuQueHtml2Pages(value)
   console.log('分页结果', pages)
   renderPages()
 }
@@ -17,34 +20,56 @@ const pageWidth = 300
 const PADDING = 20
 const pageCanUseHeight = 500 - PADDING * 2
 const lineCount = 24
-
 let pages: Array<{
   height: number
   id: string
   blockHtmls: string[]
 }> = []
+// TODO:
+// 1. 将yuque渲染出的html中带的id全部清除
+const spliteYuQueHtml2Pages = (htmlString: string) => {
+  let currentPage = 0
+  // 清除html中的id属性
+  const cleanedHtml = removeHtmlAttributes(htmlString)
+  //   export interface YuqueBlock {
+  //     tagName: string
+  //     innerText: string
+  //     outerHTML: string
+  // }
+  // export interface ParseYuqueHtmlResult {
+  //     blocks: YuqueBlock[]
+  //     html: string
+  // }
+  const blocks = parseYuqueHtml(cleanedHtml).blocks
+  pages = []
 
-export const getTextHeight = (
-  text: string,
-  params: { containerWidth: number; fontSize: string; lineCount: number }
-) => {
-  const prepared = prepare(text, params.fontSize)
-  return layout(prepared, params.containerWidth, params.lineCount).height
-}
-
-/**
- * 自动分页
- * @param htmlString 语雀HTML字符串
- * @returns 分页结果
- * */
-const spliteYuQueHtml2Pages = (
-  htmlString: string
-): Array<{
-  height: number
-  id: string
-  blockHtmls: string[]
-}> => {
-  return []
+  for (let block of blocks) {
+    let height = 0
+    const prepared = prepare(block.innerText, '16px Inter')
+    height = layout(prepared, pageWidth, lineCount).height
+    if (!pages.length) {
+      // 添加第一页
+      pages.push({
+        height: 0,
+        id: `page-${currentPage}`,
+        blockHtmls: []
+      })
+    }
+    // 如果一个块级的内部文本超出了最大高度限制，要拆分多个块
+    if (height > pageCanUseHeight) {
+    }
+    // 超出宽度限制换行
+    if (pages[currentPage].height + height > pageCanUseHeight) {
+      currentPage++
+      pages.push({
+        height: 0,
+        id: `page-${currentPage}`,
+        blockHtmls: []
+      })
+    }
+    pages[currentPage].height += height
+    pages[currentPage].blockHtmls.push(block.outerHTML)
+  }
 }
 const renderPages = () => {
   pageHtmls.value = pages.map(page => {
