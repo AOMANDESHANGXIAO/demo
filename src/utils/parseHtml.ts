@@ -1,3 +1,5 @@
+import { LinkedList } from './LinkList'
+
 export interface TagInfo {
     tagName: string
     className?: string
@@ -83,7 +85,7 @@ export interface YuqueBlock {
 }
 
 export interface ParseYuqueHtmlResult {
-    blocks: YuqueBlock[]
+    blocks: LinkedList<YuqueBlock>
     html: string
 }
 
@@ -93,11 +95,11 @@ function isBlockElement(tagName: string): boolean {
     return BLOCK_TAGS.includes(tagName.toUpperCase())
 }
 
-export function parseYuqueHtml(htmlString: string): ParseYuqueHtmlResult {
+export function parseYuqueHtml2LinkedList(htmlString: string): ParseYuqueHtmlResult {
     const parser = new DOMParser()
     const doc = parser.parseFromString(htmlString, 'text/html')
 
-    const blocks: YuqueBlock[] = []
+    const blocks = new LinkedList<YuqueBlock>()
 
     function extractBlocksFromNode(node: Node): void {
         if (node.nodeType !== Node.ELEMENT_NODE) return
@@ -112,7 +114,7 @@ export function parseYuqueHtml(htmlString: string): ParseYuqueHtmlResult {
                 innerText: element.innerText,
                 outerHTML: element.outerHTML
             }
-            blocks.push(block)
+            blocks.append(block)
             return
         }
 
@@ -130,8 +132,8 @@ export function parseYuqueHtml(htmlString: string): ParseYuqueHtmlResult {
 }
 
 export function extractYuqueTextInOrder(htmlString: string): string[] {
-    const { blocks } = parseYuqueHtml(htmlString)
-    return blocks.map(block => block.innerText)
+    const { blocks } = parseYuqueHtml2LinkedList(htmlString)
+    return blocks.toArray().map(block => block.innerText)
 }
 
 export function removeHtmlAttributes(htmlString: string): string {
