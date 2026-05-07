@@ -1,15 +1,12 @@
 import { prepare, layout } from '@chenglou/pretext'
-import {
-  prepareWithSegments,
-  walkLineRanges,
-} from '@chenglou/pretext';
+import { prepareWithSegments, walkLineRanges } from '@chenglou/pretext'
 
 export const getTextHeight = (
   text: string,
-  params: { containerWidth: number; fontSize: string; lineCount: number }
+  params: { containerWidth: number; fontSize: string; lineHeight: number }
 ) => {
   const prepared = prepare(text, params.fontSize)
-  return layout(prepared, params.containerWidth, params.lineCount).height
+  return layout(prepared, params.containerWidth, params.lineHeight).height
 }
 
 export const loadFile = function (name: string) {
@@ -20,8 +17,6 @@ export const loadFile = function (name: string) {
   xhr.send(null)
   return xhr.status == okStatus ? xhr.responseText : ''
 }
-
-
 
 /**
  * 根据固定宽高，截取能完全显示的最长文本
@@ -42,36 +37,36 @@ export function getMaxVisibleText(
   // 1. 预处理文本（只做一次，性能极高）
   const prepared = prepareWithSegments(text, font, {
     whiteSpace: 'normal',
-    wordBreak: 'normal',
-  });
+    wordBreak: 'normal'
+  })
 
   // 2. 计算最多能渲染多少行
-  const maxLines = Math.floor(containerHeight / lineHeight);
-  if (maxLines <= 0) return { visibleText: '', remainingText: text };
+  const maxLines = Math.floor(containerHeight / lineHeight)
+  if (maxLines <= 0) return { visibleText: '', remainingText: text }
 
-  let lineCount = 0;
-  let lastEndCursor = null;
+  let lineCount = 0
+  let lastEndCursor = null
 
   // 3. 遍历行，直到达到最大行数
-  walkLineRanges(prepared, containerWidth, (lineRange) => {
-    if (lineCount >= maxLines) return;
+  walkLineRanges(prepared, containerWidth, lineRange => {
+    if (lineCount >= maxLines) return
 
-    lastEndCursor = lineRange.end;
-    lineCount++;
-  });
+    lastEndCursor = lineRange.end
+    lineCount++
+  })
 
   if (!lastEndCursor) {
-    return { visibleText: '', remainingText: text };
+    return { visibleText: '', remainingText: text }
   }
 
   // 4. 从开头截取到最后一个可见字符
-  const visibleText = text.substring(0, lastEndCursor.graphemeIndex);
-  const remainingText = text.substring(lastEndCursor.graphemeIndex);
+  const visibleText = text.substring(0, lastEndCursor.graphemeIndex)
+  const remainingText = text.substring(lastEndCursor.graphemeIndex)
 
   return {
     visibleText,
     remainingText,
     renderedLines: lineCount,
-    maxLines,
-  };
+    maxLines
+  }
 }

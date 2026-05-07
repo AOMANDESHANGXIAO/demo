@@ -97,4 +97,10 @@ export class LinkedList<T> {
     this.tail = null;
     this._size = 0;
   }
+
+  insertAfter(node: ListNode<T>, value: T): void { 
+    const newNode = new ListNode(value);
+    newNode.next = node.next;
+    node.next = newNode;
+  }
 }
