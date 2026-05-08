@@ -1,81 +1,48 @@
-import {
-  prepareWithSegments,
-  walkLineRanges,
-  materializeLineRange,
-} from '@chenglou/pretext'
-
-/**
- * 根据固定宽高，截取能完全显示的最长文本
- * @param text 原始长文本
- * @param font CSS 字体字符串，例如 "16px Inter"
- * @param containerWidth 容器宽度
- * @param containerHeight 容器高度
- * @param lineHeight 行高
- * @returns 能完全显示的文本 + 剩余文本
- */
-export function getMaxVisibleText(
-  text,
-  font,
-  containerWidth,
-  containerHeight,
-  lineHeight,
-) {
-  // 1. 预处理文本（只做一次，性能极高）
-  const prepared = prepareWithSegments(text, font, {
-    whiteSpace: 'normal',
-    wordBreak: 'normal',
-  })
-
-  // 2. 计算最多能渲染多少行
-  const maxLines = Math.floor(containerHeight / lineHeight)
-  if (maxLines <= 0) return { visibleText: '', remainingText: text }
-
-  let lineCount = 0
-  let lastEndCursor = null
-
-  // 3. 遍历行，直到达到最大行数
-  walkLineRanges(prepared, containerWidth, lineRange => {
-    if (lineCount >= maxLines) return
-
-    lastEndCursor = lineRange.end
-    lineCount++
-  })
-
-  if (!lastEndCursor) {
-    return { visibleText: '', remainingText: text }
-  }
-
-  // 4. 从开头截取到最后一个可见字符
-  const visibleText = text.substring(0, lastEndCursor.graphemeIndex)
-  const remainingText = text.substring(lastEndCursor.graphemeIndex)
-
-  return {
-    visibleText,
-    remainingText,
-    renderedLines: lineCount,
-    maxLines,
-  }
-}
-// 你的容器固定尺寸
-const CONFIG = {
-  width: 320,
-  height: 200,
-  font: '16px Inter',
-  lineHeight: 24,
-}
-
-// 超长文本
-const longText = `这里放你非常非常长的文本……`
-
-// 执行截取
-const { visibleText, remainingText } = getMaxVisibleText(
-  longText,
-  CONFIG.font,
-  CONFIG.width,
-  CONFIG.height,
-  CONFIG.lineHeight,
-)
-
-// 结果
-console.log('能完全显示的文本：', visibleText)
-console.log('剩下的文本：', remainingText)
+[
+    {
+        "height": 456,
+        "id": "page-0",
+        "blockHtmls": [
+            "<p><span>晨风中醒来，遇见阳光，有融融的暖意拂过心上，旖旎过脸庞，如一片花瓣的馨香，轻轻吻落昨夜的彷徨。写过的字，早已晾晒好了在青草茵茵的河床，无需清点，那些鲜活的词章，正攀爬上蝴蝶的翅膀，成群结队的飞往你的方向。</span></p>",
+            "<p><span>情意，是水边的一朵铃兰香，从不需要隐藏，只随着风讯在流年里生长，那些漫过心湖的渴望，不为要你迎合，你只需懂得，每一次虔诚的叙述，都将载入生命的乐章。</span></p>",
+            "<p>心里，有一处温暖，即便是阳光照不到的角落，也可独自繁生着万千的明媚。正如你说，这世界是寂静的，可是就会有初晓的风从远山拂过，荡漾在心里，婉若一滴晨露落入眼眸，晕开的情愫，足以成自然清透的美丽。佛说，八千里荷塘喧哗不及与有情人的一次擦肩而过，不喜形于色，不魅惑于心</p>"
+        ]
+    },
+    {
+        "height": 456,
+        "id": "page-0",
+        "blockHtmls": [
+            "<p><span>晨风中醒来，遇见阳光，有融融的暖意拂过心上，旖旎过脸庞，如一片花瓣的馨香，轻轻吻落昨夜的彷徨。写过的字，早已晾晒好了在青草茵茵的河床，无需清点，那些鲜活的词章，正攀爬上蝴蝶的翅膀，成群结队的飞往你的方向。</span></p>",
+            "<p><span>情意，是水边的一朵铃兰香，从不需要隐藏，只随着风讯在流年里生长，那些漫过心湖的渴望，不为要你迎合，你只需懂得，每一次虔诚的叙述，都将载入生命的乐章。</span></p>",
+            "<p>心里，有一处温暖，即便是阳光照不到的角落，也可独自繁生着万千的明媚。正如你说，这世界是寂静的，可是就会有初晓的风从远山拂过，荡漾在心里，婉若一滴晨露落入眼眸，晕开的情愫，足以成自然清透的美丽。佛说，八千里荷塘喧哗不及与有情人的一次擦肩而过，不喜形于色，不魅惑于心</p>"
+        ]
+    },
+    {
+        "height": 456,
+        "id": "page-2",
+        "blockHtmls": [
+            "<p>，浅喜深爱，便是最深的懂得。</p>",
+            "<p><span>于是，我对着岁月研墨，落笔，用莞尔的笑意勾勒出无声无息的`静寂，只为隔着红尘念你。待青葱如许，芳华如昔，翻阅泛黄的画卷，回忆起素年锦时，读你写给我的诗，与你的情意，又可在心里，再一次，做温暖的重聚。</span></p>",
+            "<p><span>总会有一个契机，让混沌的心豁然开朗，就如枯木里也能长出的时光。会发现，原来流年不过是一程又一程的奔忙，让你早就没有机会去感伤。所以，有些话题，请放在九霄云外飞翔。心，留给自己，只用来负责顽强。</span></p>",
+            "<p>所有的故事，都可以看做是雪泥鸿爪，最美的印记，浅浅的旖旎在心里，纵使段落丛叠，也是情真意切，别轻易撕裂。红尘紫陌，每个人都有属于自己的朝夕，或悲或喜，都不需要在别人的世界里沉溺。做安静的女子，让风景在眼里起</p>"
+        ]
+    },
+    {
+        "height": 456,
+        "id": "page-2",
+        "blockHtmls": [
+            "<p>，浅喜深爱，便是最深的懂得。</p>",
+            "<p><span>于是，我对着岁月研墨，落笔，用莞尔的笑意勾勒出无声无息的`静寂，只为隔着红尘念你。待青葱如许，芳华如昔，翻阅泛黄的画卷，回忆起素年锦时，读你写给我的诗，与你的情意，又可在心里，再一次，做温暖的重聚。</span></p>",
+            "<p><span>总会有一个契机，让混沌的心豁然开朗，就如枯木里也能长出的时光。会发现，原来流年不过是一程又一程的奔忙，让你早就没有机会去感伤。所以，有些话题，请放在九霄云外飞翔。心，留给自己，只用来负责顽强。</span></p>",
+            "<p>所有的故事，都可以看做是雪泥鸿爪，最美的印记，浅浅的旖旎在心里，纵使段落丛叠，也是情真意切，别轻易撕裂。红尘紫陌，每个人都有属于自己的朝夕，或悲或喜，都不需要在别人的世界里沉溺。做安静的女子，让风景在眼里起</p>"
+        ]
+    },
+    {
+        "height": 216,
+        "id": "page-4",
+        "blockHtmls": [
+            "<p>落，即便有一天韶华谢尽，那悄然书写的心情，也是风轻云淡的美丽。</p>",
+            "<p><span>若是真的让自己进入到无所怨尤的状态里，你就会懂得，其实，这世界远不是传言的那么复杂。安静的写字，安静的想念，就是自己和一个所爱的人相互守候，如此的简单。眼里有风，风里有梦，纵然光阴默不作声，我也能隔着静寂将你读懂。</span></p>"
+        ]
+    }
+]

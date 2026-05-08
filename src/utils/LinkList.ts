@@ -103,4 +103,25 @@ export class LinkedList<T> {
     newNode.next = node.next;
     node.next = newNode;
   }
+
+  // 遍历链表
+  forEach(callback: (value: T, index: number) => void): void {
+    let current = this.head;
+    let index = 0;
+    while (current) {
+      callback(current.value, index);
+      current = current.next;
+      index++;
+    }
+  }
+
+  // 打印链表
+  print(): void {
+    let current = this.head;
+    while (current) {
+      console.log(current.value);
+      if (current.next) console.log('->');
+      current = current.next;
+    }
+  }
 }

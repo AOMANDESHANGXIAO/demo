@@ -2,7 +2,8 @@
 import { YuqueRichText } from 'yuque-rich-text'
 import { parseYuqueHtml2LinkedList, removeHtmlAttributes } from './utils/parseHtml'
 import { ref } from 'vue'
-import { getTextHeight } from './utils/tool'
+import { getTextHeight, spliteTextByContainer } from './utils/tool'
+
 defineOptions({
   name: 'app'
 })
@@ -42,10 +43,13 @@ const spliteYuQueHtml2Pages = (htmlString: string) => {
   if (!current) {
     return
   }
-  let page = {
-    height: 0,
-    id: `page-${blocks._size}`,
-    blockHtmls: [] as string[]
+  let currentPageIndex = 0
+  if (pages.length === 0) {
+    pages.push({
+      height: 0,
+      id: `page-${currentPageIndex}`,
+      blockHtmls: []
+    })
   }
   while (current) {
     // const prepared = prepare(current.value.innerText, testFontSetting)
@@ -56,24 +60,42 @@ const spliteYuQueHtml2Pages = (htmlString: string) => {
       fontSize: testFontSetting,
       lineHeight
     })
-    if (page.height + height > pageCanUseHeight) {
+    const currentPage = pages[currentPageIndex]
+    if (currentPage && currentPage.height + height > pageCanUseHeight) {
       // TODO: 考虑根据剩余高度拆分当前段落
-      const remainingHeight = pageCanUseHeight - page.height
+      const remainingHeight = pageCanUseHeight - currentPage.height
+      if (remainingHeight <= lineHeight) {
+        // 如果剩余高度不足以展示一行文本，则直接分页
+        pages.push({
+          height: 0,
+          id: `page-${currentPageIndex + 1}`,
+          blockHtmls: []
+        })
+        currentPageIndex++
+        continue
+      }
       // 数学计算然后得到当前段落在剩余高度下能展示的文本长度
-      const charsThatFit = Math.floor((remainingHeight / height) * current.value.innerText.length)
-      const fittingText = current.value.innerText.slice(0, charsThatFit)
-      const remainingText = current.value.innerText.slice(charsThatFit)
-      const fittingHeight = getTextHeight(fittingText, {
-        containerWidth: pageWidth,
-        fontSize: testFontSetting,
-        lineHeight
-      })
+      // 考虑实现一个splitTextByContainer函数，该函数接收一个字符串和容器宽高，返回一个字符串，该字符串在容器内能展示的文本
+      const { fittingText, remainingText, fittingHeight } = spliteTextByContainer(
+        current.value.innerText,
+        {
+          containerWidth: pageWidth,
+          fontSize: testFontSetting,
+          lineHeight,
+          remainingHeight,
+          height
+        }
+      )
+      console.log('===============================')
+      console.log('fittingText', fittingText)
+      console.log('remainingText', remainingText)
       console.log('fittingHeight', fittingHeight)
       console.log('remainingHeight', remainingHeight)
+      console.log('===============================')
       // 将 fittingText 放入当前页
       let fittingBlock = `<${current.value.tagName.toLowerCase()}>${fittingText}</${current.value.tagName.toLowerCase()}>`
-      page.blockHtmls.push(fittingBlock)
-      page.height += fittingHeight
+      currentPage.blockHtmls.push(fittingBlock)
+      currentPage.height += fittingHeight
       if (remainingText.length > 0) {
         // 创建一个新节点，将 remainingText 放入
         const newNodeValue = {
@@ -85,21 +107,13 @@ const spliteYuQueHtml2Pages = (htmlString: string) => {
         }
         blocks.insertAfter(current, newNodeValue)
       }
-      pages.push(page)
-      page = {
-        height,
-        id: `page-${blocks._size}`,
-        blockHtmls: []
-      }
     } else {
-      page.height += height
-      page.blockHtmls.push(current.value.outerHTML)
+      currentPage.height += height
+      currentPage.blockHtmls.push(current.value.outerHTML)
     }
     current = current.next
   }
-  if (page.blockHtmls.length > 0) {
-    pages.push(page)
-  }
+  console.log('pages', pages)
 }
 </script>
 
