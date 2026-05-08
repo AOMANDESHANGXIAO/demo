@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { YuqueRichText } from 'yuque-rich-text'
-import { parseYuqueHtml2LinkedList, removeHtmlAttributes } from './utils/parseHtml'
+import {
+  parseYuqueHtml2LinkedList,
+  removeHtmlAttributes,
+} from './utils/parseHtml'
 import { ref } from 'vue'
 import { getTextHeight, spliteTextByContainer } from './utils/tool'
 
 defineOptions({
-  name: 'app'
+  name: 'app',
 })
 const text = ref('')
 const handleChange = (value: string) => {
@@ -18,6 +21,7 @@ const handleChange = (value: string) => {
 const pageHtmls = ref<string[]>([])
 const pageWidth = 300
 const PADDING = 20
+const pageCanUseWidth = pageWidth - PADDING * 2
 const pageCanUseHeight = 500 - PADDING * 2
 const lineHeight = 24
 let pages: Array<{
@@ -44,48 +48,42 @@ const spliteYuQueHtml2Pages = (htmlString: string) => {
     return
   }
   let currentPageIndex = 0
-  if (pages.length === 0) {
+  if (!pages.length) {
     pages.push({
       height: 0,
       id: `page-${currentPageIndex}`,
-      blockHtmls: []
+      blockHtmls: [],
     })
   }
   while (current) {
-    // const prepared = prepare(current.value.innerText, testFontSetting)
-    // // height: 当前段落高度
-    // const { height } = layout(prepared, pageWidth, lineHeight)
     const height = getTextHeight(current.value.innerText, {
-      containerWidth: pageWidth,
+      containerWidth: pageCanUseWidth,
       fontSize: testFontSetting,
-      lineHeight
+      lineHeight,
     })
     const currentPage = pages[currentPageIndex]
     if (currentPage && currentPage.height + height > pageCanUseHeight) {
-      // TODO: 考虑根据剩余高度拆分当前段落
       const remainingHeight = pageCanUseHeight - currentPage.height
       if (remainingHeight <= lineHeight) {
         // 如果剩余高度不足以展示一行文本，则直接分页
         pages.push({
           height: 0,
           id: `page-${currentPageIndex + 1}`,
-          blockHtmls: []
+          blockHtmls: [],
         })
         currentPageIndex++
         continue
       }
       // 数学计算然后得到当前段落在剩余高度下能展示的文本长度
       // 考虑实现一个splitTextByContainer函数，该函数接收一个字符串和容器宽高，返回一个字符串，该字符串在容器内能展示的文本
-      const { fittingText, remainingText, fittingHeight } = spliteTextByContainer(
-        current.value.innerText,
-        {
-          containerWidth: pageWidth,
+      const { fittingText, remainingText, fittingHeight } =
+        spliteTextByContainer(current.value.innerText, {
+          containerWidth: pageCanUseWidth,
           fontSize: testFontSetting,
           lineHeight,
           remainingHeight,
-          height
-        }
-      )
+          height,
+        })
       console.log('===============================')
       console.log('fittingText', fittingText)
       console.log('remainingText', remainingText)
@@ -103,7 +101,7 @@ const spliteYuQueHtml2Pages = (htmlString: string) => {
           id: current.value.id,
           dataLakeId: current.value.dataLakeId,
           innerText: remainingText,
-          outerHTML: `<${current.value.tagName.toLowerCase()}>${remainingText}</${current.value.tagName.toLowerCase()}>`
+          outerHTML: `<${current.value.tagName.toLowerCase()}>${remainingText}</${current.value.tagName.toLowerCase()}>`,
         }
         blocks.insertAfter(current, newNodeValue)
       }
@@ -124,7 +122,12 @@ const spliteYuQueHtml2Pages = (htmlString: string) => {
       <YuqueRichText v-model="text" @onChange="handleChange" />
     </div>
     <div class="pages-view">
-      <div class="page" v-for="pageHtml in pageHtmls" :key="pageHtml" v-html="pageHtml"></div>
+      <div
+        class="page"
+        v-for="pageHtml in pageHtmls"
+        :key="pageHtml"
+        v-html="pageHtml"
+      ></div>
     </div>
   </main>
 </template>
