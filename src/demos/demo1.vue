@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { YuqueRichText } from 'yuque-rich-text'
-import { parseYuqueHtml2LinkedList, removeHtmlAttributes } from './utils/parseHtml'
+import {
+  parseYuqueHtml2LinkedList,
+  removeHtmlAttributes,
+} from './utils/parseHtml'
 import { ref } from 'vue'
 import { getTextHeight, spliteTextByContainer } from './utils/tool'
 defineOptions({
-  name: 'app'
+  name: 'app',
 })
 interface Page {
   height: number
@@ -37,7 +40,7 @@ const themeStyles = {
     margin: '24px 0 16px',
     color: '#1e293b',
     borderBottom: '2px solid #e2e8f0',
-    paddingBottom: '8px'
+    paddingBottom: '8px',
   },
   h2: {
     fontSize: '24px',
@@ -47,7 +50,7 @@ const themeStyles = {
     margin: '20px 0 12px',
     color: '#1e293b',
     borderBottom: '1px solid #e2e8f0',
-    paddingBottom: '6px'
+    paddingBottom: '6px',
   },
   h3: {
     fontSize: '18px',
@@ -55,197 +58,46 @@ const themeStyles = {
     fontWeight: 'bold',
     fontFamily: 'Inter, sans-serif',
     margin: '16px 0 10px',
-    color: '#1e293b'
+    color: '#1e293b',
   },
   h4: {
     fontSize: '16px',
     lineHeight: '24px',
     fontWeight: 'bold',
     margin: '14px 0 8px',
-    color: '#1e293b'
+    color: '#1e293b',
   },
   h5: {
     fontSize: '14px',
     lineHeight: '22px',
     fontWeight: 'bold',
     margin: '12px 0 6px',
-    color: '#334155'
+    color: '#334155',
   },
   h6: {
     fontSize: '12px',
     lineHeight: '20px',
     fontWeight: 'bold',
     margin: '10px 0 4px',
-    color: '#475569'
+    color: '#475569',
   },
-
   // 段落
   p: {
     fontSize: '15px',
     lineHeight: '24px',
     fontWeight: 'normal',
     margin: '10px 0',
-    color: '#334155'
+    color: '#334155',
   },
-
-  // // 行内代码
-  // code: {
-  //   backgroundColor: '#f1f5f9',
-  //   padding: '2px 6px',
-  //   borderRadius: '4px',
-  //   fontFamily: 'Menlo, Monaco, monospace',
-  //   fontSize: '14px',
-  //   color: '#e11d48'
-  // },
-
-  // 代码块
-  pre: {
-    backgroundColor: '#1e293b',
-    color: '#f8fafc',
-    padding: '16px',
-    borderRadius: '8px',
-    margin: '16px 0',
-    overflowX: 'auto',
-    fontFamily: 'Menlo, Monaco, monospace',
-    fontSize: '14px',
-    lineHeight: '20px'
-  },
-
-  // 引用
-  blockquote: {
-    borderLeft: '4px solid #3b82f6',
-    padding: '12px 16px',
-    margin: '16px 0',
-    backgroundColor: '#eff6ff',
-    color: '#1e40af'
-  },
-
-  // 列表
-  ul: {
-    margin: '12px 0',
-    paddingLeft: '24px'
-  },
-  ol: {
-    margin: '12px 0',
-    paddingLeft: '24px'
-  },
-  li: {
-    margin: '6px 0',
-    fontSize: '15px',
-    lineHeight: '22px',
-    color: '#334155'
-  },
-
-  // 表格
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    margin: '16px 0',
-    fontSize: '15px'
-  },
-  th: {
-    backgroundColor: '#f1f5f9',
-    padding: '10px 12px',
-    textAlign: 'left',
-    fontWeight: 'bold',
-    border: '1px solid #cbd5e1'
-  },
-  td: {
-    padding: '10px 12px',
-    border: '1px solid #cbd5e1',
-    color: '#334155'
-  },
-
-  // 链接
-  a: {
-    color: '#2563eb',
-    textDecoration: 'none',
-    borderBottom: '1px solid transparent'
-  },
-  'a:hover': {
-    borderBottom: '1px solid #2563eb'
-  },
-
-  // 图片
-  img: {
-    maxWidth: '100%',
-    height: 'auto',
-    borderRadius: '6px',
-    margin: '12px 0'
-  },
-
-  // 分割线
-  hr: {
-    border: 'none',
-    height: '1px',
-    backgroundColor: '#e2e8f0',
-    margin: '24px 0'
-  },
-
   // 强调文本
   strong: {
     fontWeight: 'bold',
-    color: '#1e293b'
+    color: '#1e293b',
   },
   em: {
     fontStyle: 'italic',
-    color: '#334155'
-  }
-}
-interface MarginValues {
-  top: string
-  right: string
-  bottom: string
-  left: string
-}
-
-/**
- * 解析 CSS margin 字符串，返回 top, right, bottom, left 的值
- * @param marginStr CSS margin 字符串，例如 "10px", "10px 20px", "10px 20px 30px", "10px 20px 30px 40px"
- * @returns 包含 top, right, bottom, left 的对象
- */
-const parseMargin = (marginStr?: string): MarginValues => {
-  if (!marginStr) {
-    return { top: '0', right: '0', bottom: '0', left: '0' }
-  }
-
-  // 移除多余空格并按空格分割
-  const values = marginStr.trim().split(/\s+/)
-
-  let top = '0'
-  let right = '0'
-  let bottom = '0'
-  let left = '0'
-
-  switch (values.length) {
-    case 1:
-      // margin: 10px -> 所有方向都是 10px
-      top = right = bottom = left = values[0]
-      break
-    case 2:
-      // margin: 10px 20px -> 上下 10px, 左右 20px
-      top = bottom = values[0]
-      right = left = values[1]
-      break
-    case 3:
-      // margin: 10px 20px 30px -> 上 10px, 左右 20px, 下 30px
-      top = values[0]
-      right = left = values[1]
-      bottom = values[2]
-      break
-    case 4:
-      // margin: 10px 20px 30px 40px -> 上 10px, 右 20px, 下 30px, 左 40px
-      top = values[0]
-      right = values[1]
-      bottom = values[2]
-      left = values[3]
-      break
-    default:
-      // 如果格式不正确，返回默认值或尝试取第一个值
-      top = right = bottom = left = values[0] || '0'
-  }
-
-  return { top, right, bottom, left }
+    color: '#334155',
+  },
 }
 
 /**
@@ -254,12 +106,18 @@ const parseMargin = (marginStr?: string): MarginValues => {
  * @param styleObj style 对象，如: { fontSize: '16px', color: 'red' }
  * @returns 追加了 style 属性的 HTML 字符串
  */
-const appendStyleToRootTag = (htmlString: string, styleObj: Record<string, string>): string => {
+const appendStyleToRootTag = (
+  htmlString: string,
+  styleObj: Record<string, string>,
+): string => {
   if (!htmlString) return ''
 
   // 将 style 对象转换为 css 字符串
   const styleStr = Object.entries(styleObj)
-    .map(([key, value]) => `${key.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}: ${value}`)
+    .map(
+      ([key, value]) =>
+        `${key.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}: ${value}`,
+    )
     .join('; ')
 
   // 正则匹配第一个开始标签 <tagName ...>
@@ -333,7 +191,7 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
     pages.push({
       height: 0,
       id: `page-${currentPageIndex}`,
-      blockHtmls: []
+      blockHtmls: [],
     })
   }
   while (current) {
@@ -342,20 +200,25 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
     let tagName = current.value.tagName.toLowerCase()
     let lineHeight = parseInt(
       themeStyles[tagName as keyof typeof themeStyles]?.lineHeight || '24px',
-      10
+      10,
     )
-    let fontSetting = getFontValueString(themeStyles[tagName as keyof typeof themeStyles])
+    let fontSetting = getFontValueString(
+      themeStyles[tagName as keyof typeof themeStyles],
+    )
     let testFontSetting = fontSetting
     // 拼接font样式
     const height = getTextHeight(current.value.innerText, {
       containerWidth: pageCanUseWidth,
       fontSize: testFontSetting,
-      lineHeight
+      lineHeight,
     })
     // 获取margin值
     if (themeStyles[tagName as keyof typeof themeStyles]?.margin) {
-      const marginValues = parseMargin(themeStyles[tagName as keyof typeof themeStyles]?.margin)
-      height += parseInt(marginValues.top, 10) + parseInt(marginValues.bottom, 10)
+      const marginValues = parseMargin(
+        themeStyles[tagName as keyof typeof themeStyles]?.margin,
+      )
+      height +=
+        parseInt(marginValues.top, 10) + parseInt(marginValues.bottom, 10)
     }
     if (currentPage && currentPage.height + height > pageCanUseHeight) {
       const remainingHeight = pageCanUseHeight - currentPage.height
@@ -364,27 +227,25 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
         pages.push({
           height: 0,
           id: `page-${currentPageIndex + 1}`,
-          blockHtmls: []
+          blockHtmls: [],
         })
         currentPageIndex++
         continue
       }
       // 数学计算然后得到当前段落在剩余高度下能展示的文本长度
       // 考虑实现一个splitTextByContainer函数，该函数接收一个字符串和容器宽高，返回一个字符串，该字符串在容器内能展示的文本
-      const { fittingText, remainingText, fittingHeight } = spliteTextByContainer(
-        current.value.innerText,
-        {
+      const { fittingText, remainingText, fittingHeight } =
+        spliteTextByContainer(current.value.innerText, {
           containerWidth: pageCanUseWidth,
           fontSize: testFontSetting,
           lineHeight,
-          remainingHeight
-        }
-      )
+          remainingHeight,
+        })
       // 将 fittingText 放入当前页
       let fittingBlock = `<${current.value.tagName.toLowerCase()}><span>${fittingText}</span></${current.value.tagName.toLowerCase()}>`
       fittingBlock = appendStyleToRootTag(
         fittingBlock,
-        themeStyles[tagName as keyof typeof themeStyles]
+        themeStyles[tagName as keyof typeof themeStyles],
       )
       currentPage.blockHtmls.push(fittingBlock)
       currentPage.height += fittingHeight
@@ -396,7 +257,7 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
           id: current.value.id,
           dataLakeId: current.value.dataLakeId,
           innerText: remainingText,
-          outerHTML: `<${current.value.tagName.toLowerCase()}>${remainingText}</${current.value.tagName.toLowerCase()}>`
+          outerHTML: `<${current.value.tagName.toLowerCase()}>${remainingText}</${current.value.tagName.toLowerCase()}>`,
         }
         blocks.insertAfter(current, newNodeValue)
       }
@@ -405,15 +266,15 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
       if (themeStyles[tagName as keyof typeof themeStyles].margin) {
         currentPage.height += parseInt(
           themeStyles[tagName as keyof typeof themeStyles]?.margin || '0',
-          10
+          10,
         )
       }
       currentPage.height += height
       currentPage.blockHtmls.push(
         appendStyleToRootTag(
           current.value.outerHTML,
-          themeStyles[tagName as keyof typeof themeStyles]
-        )
+          themeStyles[tagName as keyof typeof themeStyles],
+        ),
       )
     }
     current = current.next
@@ -429,7 +290,12 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
       <YuqueRichText v-model="text" @onChange="handleChange" />
     </div>
     <div class="pages-view">
-      <div class="page" v-for="pageHtml in pageHtmls" :key="pageHtml" v-html="pageHtml"></div>
+      <div
+        class="page"
+        v-for="pageHtml in pageHtmls"
+        :key="pageHtml"
+        v-html="pageHtml"
+      ></div>
     </div>
   </main>
 </template>

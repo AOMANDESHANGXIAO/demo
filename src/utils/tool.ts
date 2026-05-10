@@ -5,12 +5,9 @@ export const getTextHeight = (
   text: string,
   params: { containerWidth: number; fontSize: string; lineHeight: number },
 ) => {
-  console.log('text',text)
-  console.log('text.length',text.length)
   // debugger
   // <br/> 是空格，长度为1，但实际占一行
   if (text.length === 1) {
-    console.log('empty text, return line height', params.lineHeight)
     return params.lineHeight
   }
   const prepared = prepare(text, params.fontSize)
@@ -21,14 +18,14 @@ export const spliteTextByContainer = (
   text: string,
   params: {
     containerWidth: number
-    fontSize: string
+    font: string
     lineHeight: number
     remainingHeight: number
   },
 ) => {
-  const { containerWidth, fontSize, lineHeight, remainingHeight } =
+  const { containerWidth, font, lineHeight, remainingHeight } =
     params
-  const prepared = prepareWithSegments(text, fontSize)
+  const prepared = prepareWithSegments(text, font)
   const linesLayoutRes = layoutWithLines(prepared, containerWidth, lineHeight)
   let fittingText = ''
   let remainingText = ''
