@@ -101,6 +101,18 @@ const themeStyles = {
     fontStyle: 'italic',
     color: '#334155',
   },
+  // 引用
+  blockquote: {
+    borderLeft: '4px solid #3b82f6',
+    wordWrap: 'break-word',
+    padding: '12px 16px',
+    margin: '16px 0',
+    backgroundColor: '#eff6ff',
+    color: '#1e40af',
+    fontSize: '16px',
+    fontFamily:'Inter, sans-serif',
+    lineHeight: '24px',
+  },
 }
 
 /**
@@ -181,14 +193,12 @@ const getPredictedDomHeight = (params: {
 }) => {
   let paddingValues = { top: 0, right: 0, bottom: 0, left: 0 }
   let borderValues = { top: 0, bottom: 0, left: 0, right: 0 }
-  if (params.styleObj?.padding) {
-    paddingValues = parsePadding(params.styleObj?.padding as string)
+  if (params.styleObj) {
+    paddingValues = parsePadding(params.styleObj)
   }
-
-  if (params.styleObj?.border) {
-    borderValues = parseBorder(params.styleObj?.border as string)
+  if (params.styleObj) {
+    borderValues = parseBorder(params.styleObj)
   }
-
   const { text, containerWidth, font, lineHeight } = params
   // 预测的dom高度
   let canUseWidth =
@@ -212,8 +222,8 @@ const getPredictedDomHeight = (params: {
  * <p data-lake-id="u44431472" id="u44431472"><span data-lake-id="u4720872d" id="u4720872d" class="lake-fontsize-12" style="color: rgb(0, 0, 0)">晨风中醒来，遇见阳光，有融融的暖意拂过心上，旖旎过脸庞，如一片花瓣的馨香，轻轻吻落昨夜的彷徨。写过的字，早已晾晒好了在青草茵茵的河床，无需清点，那些鲜活的词章，正攀爬上蝴蝶的翅膀，成群结队的飞往你的方向。</span></p><p data-lake-id="u8601b468" id="u8601b468"><span data-lake-id="uc5395300" id="uc5395300" class="lake-fontsize-12" style="color: rgb(0, 0, 0)">情意，是水边的一朵铃兰香，从不需要隐藏，只随着风讯在流年里生长，那些漫过心湖的渴望，不为要你迎合，你只需懂得，每一次虔诚的叙述，都将载入生命的乐章。</span></p><p data-lake-id="ue04dee7a" id="ue04dee7a"><span data-lake-id="u5b63e273" id="u5b63e273" class="lake-fontsize-12" style="color: rgb(0, 0, 0)">心里，有一处温暖，即便是阳光照不到的角落，也可独自繁生着万千的明媚。正如你说，这世界是寂静的，可是就会有初晓的风从远山拂过，荡漾在心里，婉若一滴晨露落入眼眸，晕开的情愫，足以成自然清透的美丽。佛说，八千里荷塘喧哗不及与有情人的一次擦肩而过，不喜形于色，不魅惑于心，浅喜深爱，便是最深的懂得。</span></p><p data-lake-id="u0c566158" id="u0c566158"><span data-lake-id="u33377890" id="u33377890" class="lake-fontsize-12" style="color: rgb(0, 0, 0)">于是，我对着岁月研墨，落笔，用莞尔的笑意勾勒出无声无息的`静寂，只为隔着红尘念你。待青葱如许，芳华如昔，翻阅泛黄的画卷，回忆起素年锦时，读你写给我的诗，与你的情意，又可在心里，再一次，做温暖的重聚。</span></p><p data-lake-id="u9a609fce" id="u9a609fce"><span data-lake-id="u3a26a984" id="u3a26a984" class="lake-fontsize-12" style="color: rgb(0, 0, 0)">总会有一个契机，让混沌的心豁然开朗，就如枯木里也能长出的时光。会发现，原来流年不过是一程又一程的奔忙，让你早就没有机会去感伤。所以，有些话题，请放在九霄云外飞翔。心，留给自己，只用来负责顽强。</span></p>
  */
 const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
-  // TODO: 换行时也要计算宽度
-  // <br/> 标签的处理：如果遇到 <br/> 标签，直接在当前页追加一个高度为 lineHeight 的空白块
+  // TODO: 解决 ul、ol、blockquote标签的嵌套问题
+  // 如果ul或者ol，则要考虑拆分li
   let pages: Page[] = []
   // 清除所有的id,class等属性，只保留标签和文本内容
   // 解析html字符串为链表
@@ -245,6 +255,8 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
     let fontSetting = getFontValueString(
       themeStyles[tagName as keyof typeof themeStyles],
     )
+    if (tagName === 'blockquote') {
+    }
     // 拼接font样式
     let height = getPredictedDomHeight({
       text: current.value.innerText,
@@ -254,11 +266,11 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
       styleObj: themeStyles[tagName],
     })
     // 获取margin值
-    let marginValues = { top: 0, right: 0, bottom: 0, left: 0 }
-    if (_.has(themeStyles[tagName], 'margin')) {
-      marginValues = parseMargin(themeStyles[tagName].margin as string)
-    }
+    // let marginValues = { top: 0, right: 0, bottom: 0, left: 0 }
+    let marginValues = parseMargin(themeStyles[tagName])
     height += marginValues.top + marginValues.bottom
+    console.log('current.value', current.value)
+    console.log('预测的高度', height)
     if (currentPage && currentPage.height + height > pageCanUseHeight) {
       const remainingHeight = pageCanUseHeight - currentPage.height
       if (remainingHeight <= lineHeight) {

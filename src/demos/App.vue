@@ -90,6 +90,24 @@ onMounted(() => {
 </script>
 
 <template>
+  <blockquote
+    style="
+      border-left: 4px solid #3b82f6;
+      padding: 12px 16px;
+      margin: 16px 0;
+      background-color: #eff6ff;
+      color: #1e40af;
+    "
+  >
+    <p>
+      <span
+        >我喜欢你不是一天两天，而是.....我的大大昂到昂到昂到啊大阿大撒昂到昂到啊</span
+      >
+    </p>
+    <p><span>123</span></p>
+    <p><span>123</span></p>
+    <p><span>123</span></p>
+  </blockquote>
   <div :style="domStyle">{{ text }}</div>
 </template>
 
