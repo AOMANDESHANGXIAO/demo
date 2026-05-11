@@ -1,16 +1,13 @@
 <script setup lang="ts">
 import { YuqueRichText } from 'yuque-rich-text'
-import {
-  parseYuqueHtml2LinkedList,
-  removeHtmlAttributes,
-} from './utils/parseHtml'
+import { parseYuqueHtml2LinkedList, removeHtmlAttributes } from './utils/parseHtml'
 import { parseMargin, parsePadding, parseBorder } from './utils/parseCss'
 import { ref } from 'vue'
-import { getTextHeight, spliteTextByContainer } from './utils/tool'
+import { getTextHeight, spliteTextByContainer, getHtmlStringHeight } from './utils/tool'
 import _ from 'lodash'
 
 defineOptions({
-  name: 'app',
+  name: 'app'
 })
 interface Page {
   height: number
@@ -43,7 +40,7 @@ const themeStyles = {
     margin: '24px 0 16px',
     color: '#1e293b',
     borderBottom: '2px solid #e2e8f0',
-    paddingBottom: '8px',
+    paddingBottom: '8px'
   },
   h2: {
     fontSize: '24px',
@@ -53,7 +50,7 @@ const themeStyles = {
     margin: '20px 0 12px',
     color: '#1e293b',
     borderBottom: '1px solid #e2e8f0',
-    paddingBottom: '6px',
+    paddingBottom: '6px'
   },
   h3: {
     fontSize: '18px',
@@ -61,28 +58,28 @@ const themeStyles = {
     fontWeight: 'bold',
     fontFamily: 'Inter, sans-serif',
     margin: '16px 0 10px',
-    color: '#1e293b',
+    color: '#1e293b'
   },
   h4: {
     fontSize: '16px',
     lineHeight: '24px',
     fontWeight: 'bold',
     margin: '14px 0 8px',
-    color: '#1e293b',
+    color: '#1e293b'
   },
   h5: {
     fontSize: '14px',
     lineHeight: '22px',
     fontWeight: 'bold',
     margin: '12px 0 6px',
-    color: '#334155',
+    color: '#334155'
   },
   h6: {
     fontSize: '12px',
     lineHeight: '20px',
     fontWeight: 'bold',
     margin: '10px 0 4px',
-    color: '#475569',
+    color: '#475569'
   },
   // 段落
   p: {
@@ -90,16 +87,16 @@ const themeStyles = {
     lineHeight: '24px',
     fontWeight: 'normal',
     margin: '10px 0',
-    color: '#334155',
+    color: '#334155'
   },
   // 强调文本
   strong: {
     fontWeight: 'bold',
-    color: '#1e293b',
+    color: '#1e293b'
   },
   em: {
     fontStyle: 'italic',
-    color: '#334155',
+    color: '#334155'
   },
   // 引用
   blockquote: {
@@ -110,9 +107,9 @@ const themeStyles = {
     backgroundColor: '#eff6ff',
     color: '#1e40af',
     fontSize: '16px',
-    fontFamily:'Inter, sans-serif',
-    lineHeight: '24px',
-  },
+    fontFamily: 'Inter, sans-serif',
+    lineHeight: '24px'
+  }
 }
 
 /**
@@ -121,18 +118,12 @@ const themeStyles = {
  * @param styleObj style 对象，如: { fontSize: '16px', color: 'red' }
  * @returns 追加了 style 属性的 HTML 字符串
  */
-const appendStyleToRootTag = (
-  htmlString: string,
-  styleObj: Record<string, string>,
-): string => {
+const appendStyleToRootTag = (htmlString: string, styleObj: Record<string, string>): string => {
   if (!htmlString) return ''
 
   // 将 style 对象转换为 css 字符串
   const styleStr = Object.entries(styleObj)
-    .map(
-      ([key, value]) =>
-        `${key.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}: ${value}`,
-    )
+    .map(([key, value]) => `${key.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}: ${value}`)
     .join('; ')
 
   // 正则匹配第一个开始标签 <tagName ...>
@@ -210,9 +201,26 @@ const getPredictedDomHeight = (params: {
   const textHeight = getTextHeight(text, {
     containerWidth: canUseWidth,
     fontSize: font,
-    lineHeight,
+    lineHeight
   })
   return textHeight + borderValues.top + borderValues.bottom
+}
+
+/**
+ * 提取 blockquote 内所有 p 标签的纯文本内容，返回文本数组
+ * @param {string} htmlStr - 输入的 HTML 字符串（包含 blockquote 结构）
+ * @returns {string[]} 纯文本数组
+ */
+function extractBlockquoteText(htmlStr: string): string[] {
+  // 1. 创建临时 DOM 容器（不会渲染到页面）
+  const tempDiv = document.createElement('div')
+  tempDiv.innerHTML = htmlStr
+
+  // 2. 找到所有 blockquote 下的 p 标签
+  const pElements = tempDiv.querySelectorAll('blockquote p')
+
+  // 3. 遍历提取纯文本，去除首尾空格
+  return Array.from(pElements).map(p => p.textContent.trim())
 }
 
 /**
@@ -237,89 +245,164 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
   if (!pages.length) {
     pages.push({
       height: 0,
-      id: `page-${currentPageIndex}`,
-      blockHtmls: [],
+      id: crypto.randomUUID(),
+      blockHtmls: []
     })
   }
   while (current) {
     const currentPage = pages[currentPageIndex]
-    let tagName =
-      current.value.tagName.toLowerCase() as keyof typeof themeStyles
+    let tagName = current.value.tagName.toLowerCase() as keyof typeof themeStyles
+    let height = 0
     let lineHeight = 0
     if (_.has(themeStyles[tagName], 'lineHeight')) {
-      lineHeight = parseInt(
-        (themeStyles[tagName].lineHeight as string) || '24px',
-        10,
-      )
+      lineHeight = parseInt((themeStyles[tagName].lineHeight as string) || '24px', 10)
     }
-    let fontSetting = getFontValueString(
-      themeStyles[tagName as keyof typeof themeStyles],
-    )
+    const remainingHeight = pageCanUseHeight - currentPage.height
+    if (remainingHeight <= lineHeight) {
+      // 如果剩余高度不足以展示一行文本，则直接分页
+      pages.push({
+        height: 0,
+        id: crypto.randomUUID(),
+        blockHtmls: []
+      })
+      currentPageIndex++
+      continue
+    }
+    let fontSetting = getFontValueString(themeStyles[tagName as keyof typeof themeStyles])
     if (tagName === 'blockquote') {
-    }
-    // 拼接font样式
-    let height = getPredictedDomHeight({
-      text: current.value.innerText,
-      containerWidth: pageCanUseWidth,
-      font: fontSetting,
-      lineHeight,
-      styleObj: themeStyles[tagName],
-    })
-    // 获取margin值
-    // let marginValues = { top: 0, right: 0, bottom: 0, left: 0 }
-    let marginValues = parseMargin(themeStyles[tagName])
-    height += marginValues.top + marginValues.bottom
-    console.log('current.value', current.value)
-    console.log('预测的高度', height)
-    if (currentPage && currentPage.height + height > pageCanUseHeight) {
-      const remainingHeight = pageCanUseHeight - currentPage.height
-      if (remainingHeight <= lineHeight) {
-        // 如果剩余高度不足以展示一行文本，则直接分页
-        pages.push({
-          height: 0,
-          id: `page-${currentPageIndex + 1}`,
-          blockHtmls: [],
-        })
-        currentPageIndex++
-        continue
-      }
-      // 数学计算然后得到当前段落在剩余高度下能展示的文本长度
-      // 考虑实现一个splitTextByContainer函数，该函数接收一个字符串和容器宽高，返回一个字符串，该字符串在容器内能展示的文本
-      const { fittingText, remainingText, fittingHeight } =
-        spliteTextByContainer(current.value.innerText, {
+      // 嵌套块级引用
+      // 示例:
+      //"<blockquote><p><span>引用示例块级元素1</span></p><p><span>引用示例块级元素2</span></p><p><span>引用示例块级元素3</span></p></blockquote>"
+      // 写一个方法：将嵌套的块级元素转换为数组
+      // 根据可用高度考虑是否拆分 blockquote标签，如果需要拆分，则在当前页放置一个blockquote标签，标签内放置能展示的文本内容，剩余文本内容放置在一个新的blockquote标签内，并插入链表中
+      let blockquoteHtmls = current.value.outerHTML
+      // 拆分行分别测量, 使用正则表达式匹配出blockquote内的每一行文本，分别测量高度并累加
+      let lines = extractBlockquoteText(blockquoteHtmls)
+      console.log('blockquote lines', lines)
+      let i = 0
+      let paddingValues = parsePadding(themeStyles.blockquote)
+      let borderValues = parseBorder(themeStyles.blockquote)
+      let marginValues = parseMargin(themeStyles.blockquote)
+      height =
+        paddingValues.top +
+        paddingValues.bottom +
+        borderValues.top +
+        borderValues.bottom +
+        marginValues.top +
+        marginValues.bottom
+      while (i < lines.length && currentPage.height + height <= pageCanUseHeight) {
+        let blockLineHeight = getPredictedDomHeight({
+          text: lines[i],
           containerWidth: pageCanUseWidth,
           font: fontSetting,
           lineHeight,
-          remainingHeight,
+          styleObj: themeStyles.blockquote
         })
-      // 将 fittingText 放入当前页
-      let fittingBlock = `<${current.value.tagName.toLowerCase()}><span>${fittingText}</span></${current.value.tagName.toLowerCase()}>`
-      fittingBlock = appendStyleToRootTag(
-        fittingBlock,
-        themeStyles[tagName as keyof typeof themeStyles],
-      )
-      currentPage.blockHtmls.push(fittingBlock)
-      currentPage.height += fittingHeight
-
-      if (remainingText.length > 0) {
-        // 创建一个新节点，将 remainingText 插入链表
+        console.log(`第${i + 1}行的高度:`, blockLineHeight)
+        // height += blockLineHeight
+        height += blockLineHeight
+        i++
+      }
+      let hasBeenWorkedIndex = i - 1
+      // 未处理的行，说明
+      if (i < lines.length) {
+        console.log(`第${i + 1}行后无法完全展示，需要拆分blockquote标签`)
+        // 加入新的一页
+        pages.push({
+          height: 0,
+          id: crypto.randomUUID(),
+          blockHtmls: []
+        })
+        currentPageIndex++
+        let newBlockQuoteDom = document.createElement('blockquote')
+        newBlockQuoteDom.style.cssText = Object.keys(themeStyles.blockquote)
+          .map(key => {
+            const value = themeStyles.blockquote[key as keyof typeof themeStyles.blockquote]
+            return `${key}: ${value};`
+          })
+          .join('')
+        while (i < lines.length) {
+          const newLineDom = document.createElement('p')
+          newLineDom.appendChild(document.createElement('span')).innerText = lines[i]
+          newBlockQuoteDom.appendChild(newLineDom)
+          i++
+        }
+        // 将新的 blockquote 标签插入链表
         const newNodeValue = {
-          tagName: current.value.tagName,
-          id: current.value.id,
-          dataLakeId: current.value.dataLakeId,
-          innerText: remainingText,
-          outerHTML: `<${current.value.tagName.toLowerCase()}>${remainingText}</${current.value.tagName.toLowerCase()}>`,
+          tagName: 'blockquote',
+          id: crypto.randomUUID(),
+          dataLakeId: '',
+          innerText: newBlockQuoteDom.innerText,
+          outerHTML: newBlockQuoteDom.outerHTML
         }
         blocks.insertAfter(current, newNodeValue)
+        //  将已经处理的插入Page
+        currentPage.height += height
+      } else {
+        // 说明整个blockquote的标签都能塞得下
+        currentPage.height += height
+        currentPage.blockHtmls.push(
+          appendStyleToRootTag(current.value.outerHTML, themeStyles.blockquote)
+        )
       }
     } else {
-      currentPage.height += height
-      currentPage.blockHtmls.push(
-        appendStyleToRootTag(
-          current.value.outerHTML,
-          themeStyles[tagName as keyof typeof themeStyles],
-        ),
-      )
+      // if (tagName === 'ul' || tagName === 'ol') {
+      // }
+      // 拼接font样式
+      height = getPredictedDomHeight({
+        text: current.value.innerText,
+        containerWidth: pageCanUseWidth,
+        font: fontSetting,
+        lineHeight,
+        styleObj: themeStyles[tagName]
+      })
+      // 获取margin值
+      // let marginValues = { top: 0, right: 0, bottom: 0, left: 0 }
+      let marginValues = parseMargin(themeStyles[tagName])
+      height += marginValues.top + marginValues.bottom
+      console.log('current.value', current.value)
+      console.log('预测的高度', height)
+      if (currentPage && currentPage.height + height > pageCanUseHeight) {
+        // 数学计算然后得到当前段落在剩余高度下能展示的文本长度
+        // 考虑实现一个splitTextByContainer函数，该函数接收一个字符串和容器宽高，返回一个字符串，该字符串在容器内能展示的文本
+        const { fittingText, remainingText, fittingHeight } = spliteTextByContainer(
+          current.value.innerText,
+          {
+            containerWidth: pageCanUseWidth,
+            font: fontSetting,
+            lineHeight,
+            remainingHeight
+          }
+        )
+        // 将 fittingText 放入当前页
+        let fittingBlock = `<${current.value.tagName.toLowerCase()}><span>${fittingText}</span></${current.value.tagName.toLowerCase()}>`
+        fittingBlock = appendStyleToRootTag(
+          fittingBlock,
+          themeStyles[tagName as keyof typeof themeStyles]
+        )
+        currentPage.blockHtmls.push(fittingBlock)
+        currentPage.height += fittingHeight
+
+        if (remainingText.length > 0) {
+          // 创建一个新节点，将 remainingText 插入链表
+          const newNodeValue = {
+            tagName: current.value.tagName,
+            id: current.value.id,
+            dataLakeId: current.value.dataLakeId,
+            innerText: remainingText,
+            outerHTML: `<${current.value.tagName.toLowerCase()}>${remainingText}</${current.value.tagName.toLowerCase()}>`
+          }
+          blocks.insertAfter(current, newNodeValue)
+        }
+      } else {
+        currentPage.height += height
+        currentPage.blockHtmls.push(
+          appendStyleToRootTag(
+            current.value.outerHTML,
+            themeStyles[tagName as keyof typeof themeStyles]
+          )
+        )
+      }
     }
     current = current.next
   }
@@ -334,12 +417,7 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
       <YuqueRichText v-model="text" @onChange="handleChange" />
     </div>
     <div class="pages-view">
-      <div
-        class="page"
-        v-for="pageHtml in pageHtmls"
-        :key="pageHtml"
-        v-html="pageHtml"
-      ></div>
+      <div class="page" v-for="pageHtml in pageHtmls" :key="pageHtml" v-html="pageHtml"></div>
     </div>
   </main>
 </template>

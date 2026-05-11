@@ -72,7 +72,7 @@ export const parseMargin = (styleObj: Record<string, string>): MarginValues => {
   if (_.has(styleObj, 'margin-left') || _.has(styleObj, 'marginLeft')) {
     left = parseInt(styleObj['margin-left'] || styleObj['marginLeft'], 10) || 0
   }
-  console.log('Parsed margin values:', { top, right, bottom, left })
+  // console.log('Parsed margin values:', { top, right, bottom, left })
 
   return {
     top,
@@ -145,7 +145,7 @@ export const parsePadding = (
     left =
       parseInt(styleObj['padding-left'] || styleObj['paddingLeft'], 10) || 0
   }
-  console.log('Parsed padding values:', { top, right, bottom, left })
+  // console.log('Parsed padding values:', { top, right, bottom, left })
 
   return {
     top,
