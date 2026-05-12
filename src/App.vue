@@ -278,7 +278,7 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
       let blockquoteHtmls = current.value.outerHTML
       // 拆分行分别测量, 使用正则表达式匹配出blockquote内的每一行文本，分别测量高度并累加
       let lines = extractBlockquoteText(blockquoteHtmls)
-      console.log('blockquote lines', lines)
+      let canBeInsertedBlockquoteDom = document.createElement('blockquote')
       let i = 0
       let paddingValues = parsePadding(themeStyles.blockquote)
       let borderValues = parseBorder(themeStyles.blockquote)
@@ -298,13 +298,38 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
           lineHeight,
           styleObj: themeStyles.blockquote
         })
-        console.log(`第${i + 1}行的高度:`, blockLineHeight)
-        // height += blockLineHeight
-        height += blockLineHeight
+        // 考虑拆分问题
+        if (currentPage.height + height + blockLineHeight > pageCanUseHeight) {
+          const { fittingText, remainingText, fittingHeight } = spliteTextByContainer(lines[i], {
+            containerWidth:
+              pageCanUseWidth -
+              paddingValues.left -
+              paddingValues.right -
+              borderValues.left -
+              borderValues.right,
+            font: fontSetting,
+            lineHeight,
+            remainingHeight: pageCanUseHeight - currentPage.height - height
+          })
+          console.log('已处理的文本:', fittingText)
+          console.log('剩余文本:', remainingText)
+          // 插入到已经处理过的liu的blockquote标签中
+          canBeInsertedBlockquoteDom
+            .appendChild(document.createElement('p'))
+            .appendChild(document.createElement('span')).innerText = fittingText
+          height += fittingHeight
+          currentPage.height += height
+          lines[i] = remainingText
+          break
+        } else {
+          height += blockLineHeight
+          canBeInsertedBlockquoteDom
+            .appendChild(document.createElement('p'))
+            .appendChild(document.createElement('span')).innerText = lines[i]
+        }
         i++
       }
-      let hasBeenWorkedIndex = i - 1
-      // 未处理的行，说明
+      // 未处理的行，说明需要分页
       if (i < lines.length) {
         console.log(`第${i + 1}行后无法完全展示，需要拆分blockquote标签`)
         // 加入新的一页
@@ -338,11 +363,11 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
         blocks.insertAfter(current, newNodeValue)
         //  将已经处理的插入Page
         currentPage.height += height
-      } else {
-        // 说明整个blockquote的标签都能塞得下
-        currentPage.height += height
+      }
+      currentPage.height += height
+      if (canBeInsertedBlockquoteDom.children.length > 0) {
         currentPage.blockHtmls.push(
-          appendStyleToRootTag(current.value.outerHTML, themeStyles.blockquote)
+          appendStyleToRootTag(canBeInsertedBlockquoteDom.outerHTML, themeStyles.blockquote)
         )
       }
     } else {
@@ -356,12 +381,8 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
         lineHeight,
         styleObj: themeStyles[tagName]
       })
-      // 获取margin值
-      // let marginValues = { top: 0, right: 0, bottom: 0, left: 0 }
       let marginValues = parseMargin(themeStyles[tagName])
       height += marginValues.top + marginValues.bottom
-      console.log('current.value', current.value)
-      console.log('预测的高度', height)
       if (currentPage && currentPage.height + height > pageCanUseHeight) {
         // 数学计算然后得到当前段落在剩余高度下能展示的文本长度
         // 考虑实现一个splitTextByContainer函数，该函数接收一个字符串和容器宽高，返回一个字符串，该字符串在容器内能展示的文本

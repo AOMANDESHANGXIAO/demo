@@ -220,6 +220,6 @@ export const parseBorder = (
           parseInt(borderMatch[1], 10)
     }
   }
-  console.log('Parsed border values:', defaultVal)
+  // console.log('Parsed border values:', defaultVal)
   return defaultVal
 }
