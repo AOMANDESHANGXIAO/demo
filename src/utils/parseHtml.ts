@@ -78,8 +78,6 @@ export function getTagStatistics(htmlString: string): Record<string, number> {
 
 export interface YuqueBlock {
     tagName: string
-    id?: string
-    dataLakeId?: string
     innerText: string
     outerHTML: string
 }
@@ -109,8 +107,6 @@ export function parseYuqueHtml2LinkedList(htmlString: string): ParseYuqueHtmlRes
         if (isBlockElement(element.tagName)) {
             const block: YuqueBlock = {
                 tagName: element.tagName,
-                id: element.id || undefined,
-                dataLakeId: element.getAttribute('data-lake-id') || undefined,
                 innerText: element.innerText,
                 outerHTML: element.outerHTML
             }

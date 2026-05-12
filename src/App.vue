@@ -3,7 +3,7 @@ import { YuqueRichText } from 'yuque-rich-text'
 import { parseYuqueHtml2LinkedList, removeHtmlAttributes } from './utils/parseHtml'
 import { parseMargin, parsePadding, parseBorder } from './utils/parseCss'
 import { ref } from 'vue'
-import { getTextHeight, spliteTextByContainer, getHtmlStringHeight } from './utils/tool'
+import { getTextHeight, spliteTextByContainer } from './utils/tool'
 import _ from 'lodash'
 
 defineOptions({
@@ -109,6 +109,38 @@ const themeStyles = {
     fontSize: '16px',
     fontFamily: 'Inter, sans-serif',
     lineHeight: '24px'
+  },
+  // 列表
+  ul: {
+    margin: '12px 0',
+    paddingLeft: '24px',
+    wordWrap: 'break-word',
+    fontSize: '15px',
+    lineHeight: '22px',
+    color: '#334155'
+  },
+  ol: {
+    margin: '12px 0',
+    paddingLeft: '24px',
+    wordWrap: 'break-word',
+    fontSize: '15px',
+    lineHeight: '22px',
+    color: '#334155'
+  },
+  // 链接
+  a: {
+    color: '#2563eb',
+    textDecoration: 'none',
+    borderBottom: '1px solid transparent',
+    border: 'none',
+    padding: '0',
+    margin: '0'
+  },
+  'a:hover': {
+    borderBottom: '1px solid #2563eb',
+    border: 'none',
+    padding: '0',
+    margin: '0'
   }
 }
 
@@ -207,20 +239,24 @@ const getPredictedDomHeight = (params: {
 }
 
 /**
- * 提取 blockquote 内所有 p 标签的纯文本内容，返回文本数组
+ * 提取 嵌套标签 内所有 p 标签的纯文本内容，返回文本数组
  * @param {string} htmlStr - 输入的 HTML 字符串（包含 blockquote 结构）
  * @returns {string[]} 纯文本数组
  */
-function extractBlockquoteText(htmlStr: string): string[] {
+function extractTextFromNestedTags(
+  htmlStr: string,
+  outerTagName: string,
+  innerTagName: string
+): string[] {
   // 1. 创建临时 DOM 容器（不会渲染到页面）
   const tempDiv = document.createElement('div')
   tempDiv.innerHTML = htmlStr
 
-  // 2. 找到所有 blockquote 下的 p 标签
-  const pElements = tempDiv.querySelectorAll('blockquote p')
+  // 2. 找到所有指定外层标签下的内层标签
+  const innerElements = tempDiv.querySelectorAll(`${outerTagName} ${innerTagName}`)
 
   // 3. 遍历提取纯文本，去除首尾空格
-  return Array.from(pElements).map(p => p.textContent.trim())
+  return Array.from(innerElements).map(el => el.textContent.trim())
 }
 
 /**
@@ -250,6 +286,7 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
     })
   }
   while (current) {
+    console.log('当前处理的节点:', current.value)
     const currentPage = pages[currentPageIndex]
     let tagName = current.value.tagName.toLowerCase() as keyof typeof themeStyles
     let height = 0
@@ -269,7 +306,7 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
       continue
     }
     let fontSetting = getFontValueString(themeStyles[tagName as keyof typeof themeStyles])
-    if (tagName === 'blockquote') {
+    if (tagName === 'blockquote' || tagName === 'ul' || tagName === 'ol') {
       // 嵌套块级引用
       // 示例:
       //"<blockquote><p><span>引用示例块级元素1</span></p><p><span>引用示例块级元素2</span></p><p><span>引用示例块级元素3</span></p></blockquote>"
@@ -277,12 +314,16 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
       // 根据可用高度考虑是否拆分 blockquote标签，如果需要拆分，则在当前页放置一个blockquote标签，标签内放置能展示的文本内容，剩余文本内容放置在一个新的blockquote标签内，并插入链表中
       let blockquoteHtmls = current.value.outerHTML
       // 拆分行分别测量, 使用正则表达式匹配出blockquote内的每一行文本，分别测量高度并累加
-      let lines = extractBlockquoteText(blockquoteHtmls)
-      let canBeInsertedBlockquoteDom = document.createElement('blockquote')
+      let lines = extractTextFromNestedTags(
+        blockquoteHtmls,
+        tagName,
+        tagName === 'blockquote' ? 'p' : 'li'
+      )
+      let canBeInsertedDom = document.createElement(tagName)
       let i = 0
-      let paddingValues = parsePadding(themeStyles.blockquote)
-      let borderValues = parseBorder(themeStyles.blockquote)
-      let marginValues = parseMargin(themeStyles.blockquote)
+      let paddingValues = parsePadding(themeStyles[tagName])
+      let borderValues = parseBorder(themeStyles[tagName])
+      let marginValues = parseMargin(themeStyles[tagName])
       height =
         paddingValues.top +
         paddingValues.bottom +
@@ -296,7 +337,7 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
           containerWidth: pageCanUseWidth,
           font: fontSetting,
           lineHeight,
-          styleObj: themeStyles.blockquote
+          styleObj: themeStyles[tagName]
         })
         // 考虑拆分问题
         if (currentPage.height + height + blockLineHeight > pageCanUseHeight) {
@@ -314,8 +355,8 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
           console.log('已处理的文本:', fittingText)
           console.log('剩余文本:', remainingText)
           // 插入到已经处理过的liu的blockquote标签中
-          canBeInsertedBlockquoteDom
-            .appendChild(document.createElement('p'))
+          canBeInsertedDom
+            .appendChild(document.createElement(tagName === 'blockquote' ? 'p' : 'li'))
             .appendChild(document.createElement('span')).innerText = fittingText
           height += fittingHeight
           currentPage.height += height
@@ -323,15 +364,15 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
           break
         } else {
           height += blockLineHeight
-          canBeInsertedBlockquoteDom
-            .appendChild(document.createElement('p'))
+          canBeInsertedDom
+            .appendChild(document.createElement(tagName === 'blockquote' ? 'p' : 'li'))
             .appendChild(document.createElement('span')).innerText = lines[i]
         }
         i++
       }
       // 未处理的行，说明需要分页
       if (i < lines.length) {
-        console.log(`第${i + 1}行后无法完全展示，需要拆分blockquote标签`)
+        console.log(`第${i + 1}行后无法完全展示，需要拆分${tagName}标签`)
         // 加入新的一页
         pages.push({
           height: 0,
@@ -339,24 +380,35 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
           blockHtmls: []
         })
         currentPageIndex++
-        let newBlockQuoteDom = document.createElement('blockquote')
-        newBlockQuoteDom.style.cssText = Object.keys(themeStyles.blockquote)
+        let newBlockQuoteDom = document.createElement(tagName)
+        newBlockQuoteDom.style.cssText = Object.keys(themeStyles[tagName])
           .map(key => {
-            const value = themeStyles.blockquote[key as keyof typeof themeStyles.blockquote]
+            // @ts-ignore
+            const value = themeStyles[tagName][key as keyof (typeof themeStyles)[tagName]]
             return `${key}: ${value};`
           })
           .join('')
         while (i < lines.length) {
-          const newLineDom = document.createElement('p')
+          const newLineDom = document.createElement(tagName === 'blockquote' ? 'p' : 'li')
           newLineDom.appendChild(document.createElement('span')).innerText = lines[i]
+          console.log('newBlockQuoteDom.children.length', newBlockQuoteDom.children.length)
+          // 似乎只能通过 ul 和 ol 标签来控制列表样式
+          if (tagName === 'ul' && newBlockQuoteDom.children.length === 0) {
+            // 若被拆分的标签是无序列表，则设置被拆分处理的第一个li没有小圆点样式
+            newLineDom.classList.add('no-marker')
+          }
+          // if (tagName === 'ol' && newBlockQuoteDom.children.length === 0) {
+          //   // 若被拆分的标签是有序列表，则设置被拆分处理的第一个li没有数字样式
+          //   newLineDom.style.cssText = `counter-reset: none; list-style-type: none;`
+          //   // 并且后续的数字样式要接着上一个列表样式
+          // }
           newBlockQuoteDom.appendChild(newLineDom)
           i++
         }
-        // 将新的 blockquote 标签插入链表
+        // 将新的 blockquote、ul、ol标签插入链表中，并设置isCutted为true，表示该标签是被分页的
         const newNodeValue = {
-          tagName: 'blockquote',
+          tagName: tagName,
           id: crypto.randomUUID(),
-          dataLakeId: '',
           innerText: newBlockQuoteDom.innerText,
           outerHTML: newBlockQuoteDom.outerHTML
         }
@@ -365,14 +417,12 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
         currentPage.height += height
       }
       currentPage.height += height
-      if (canBeInsertedBlockquoteDom.children.length > 0) {
+      if (canBeInsertedDom.children.length > 0) {
         currentPage.blockHtmls.push(
-          appendStyleToRootTag(canBeInsertedBlockquoteDom.outerHTML, themeStyles.blockquote)
+          appendStyleToRootTag(canBeInsertedDom.outerHTML, themeStyles[tagName])
         )
       }
     } else {
-      // if (tagName === 'ul' || tagName === 'ol') {
-      // }
       // 拼接font样式
       height = getPredictedDomHeight({
         text: current.value.innerText,
@@ -408,8 +458,7 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
           // 创建一个新节点，将 remainingText 插入链表
           const newNodeValue = {
             tagName: current.value.tagName,
-            id: current.value.id,
-            dataLakeId: current.value.dataLakeId,
+            id: crypto.randomUUID(),
             innerText: remainingText,
             outerHTML: `<${current.value.tagName.toLowerCase()}>${remainingText}</${current.value.tagName.toLowerCase()}>`
           }
@@ -444,6 +493,10 @@ const spliteYuQueHtml2Pages = (htmlString: string): Page[] => {
 </template>
 
 <style scoped lang="scss">
+.no-marker {
+  list-style-type: none;
+}
+
 .pages-view {
   .page {
     p {
